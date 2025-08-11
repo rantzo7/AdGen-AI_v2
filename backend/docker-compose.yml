@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgresql # Auth service might interact with Supabase, but also potentially a local DB for user metadata if needed.
+    networks:
+      - adgen-network
+
+  campaign-service:
+    build: ./campaign-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - META_ACCESS_TOKEN=${META_ACCESS_TOKEN} # Pass Meta token
+      - META_AD_ACCOUNT_ID=${META_AD_ACCOUNT_ID} # Pass Meta Ad Account ID
+    volumes:
+      - ./campaign-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgresql
+    networks:
+      - adgen-network
+
+  generation-service:
+    build: ./generation-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - RABBITMQ_URL=amqp://rabbitmq
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - STRAICO_API_KEY=${STRAICO_API_KEY}
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    volumes:
+      - ./generation-service:/app
+      - /app/node_modules
+    depends_on:
+      - rabbitmq
+    networks:
+      - adgen-network
+
+  conversational-ai-service:
+    build: ./conversational-ai-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./conversational-ai-service:/app
+      - /app/node_modules
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - adgen-network
+
+  postgresql:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - adgen-network
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - adgen-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: always
+    ports:
+      - "5672:5672" # AMQP protocol port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    networks:
+      - adgen-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  adgen-network:
+    driver: bridge

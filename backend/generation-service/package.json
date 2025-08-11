@@ -1,0 +1,30 @@
+{
+  "name": "generation-service",
+  "version": "1.0.0",
+  "description": "Ad content generation service for AdGen-AI",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/amqplib": "^0.10.5",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "puppeteer": "^22.12.1",
+    "@google/generative-ai": "^0.14.0",
+    "axios": "^1.7.2",
+    "@supabase/supabase-js": "^2.44.4"
+  }
+}
